@@ -1,0 +1,184 @@
+# Conexão com MongoDB
+
+from motor.motor_asyncio import AsyncIOMotorClient
+
+client = AsyncIOMotorClient("mongodb://localhost:27017")
+db = client.elegantiaDB
+collection = db.receber
+
+-----------------------------------
+
+# Modelo
+
+from pydantic import BaseModel, Field
+from bson import ObjectId
+from typing import Optional
+from datetime import date
+
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if not ObjectId.is_valid(v):
+            raise ValueError('Invalid ObjectId')
+        return ObjectId(v)
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema.update(type='string')
+
+class ReceberModel(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id")
+    nome: str
+    cpf: str
+    telefone: str
+    valor: float
+    vencimento: date
+    cadastrado: Optional[date] = None
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+
+---------------------------------------
+
+# Schemas
+
+from pydantic import BaseModel, Field
+from datetime import date
+from typing import Optional
+
+class ReceberCreate(BaseModel):
+    nome: str = Field(..., example="João da Silva")
+    cpf: str = Field(..., example="123.456.789-00")
+    telefone: str = Field(..., example="(11) 98765-4321")
+    valor: float = Field(..., example=1500.75)
+    vencimento: date = Field(..., example="2024-07-01")
+
+class ReceberResponse(BaseModel):
+    id: str
+    nome: str
+    cpf: str
+    telefone: str
+    valor: float
+    vencimento: date
+    cadastrado: Optional[date] = Field(None, example="2024-06-01")
+
+
+
+---------------------------------------
+
+
+
+# Endpoints com router
+
+from fastapi import APIRouter, HTTPException
+from typing import List, Optional
+from bson import ObjectId
+from datetime import date
+
+from models import ReceberModel, PyObjectId
+from schemas import ReceberCreate, ReceberResponse
+from database import db
+
+router = APIRouter()
+
+collection = db.receber
+
+@router.post("/", response_model=ReceberResponse)
+async def create_receber(receber: ReceberCreate):
+    receber_dict = receber.dict()
+    result = await collection.insert_one(receber_dict)
+    receber_dict["_id"] = str(result.inserted_id)
+    return receber_dict
+
+@router.get("/", response_model=List[ReceberResponse])
+async def get_receber(
+    nome: Optional[str] = None,
+    cpf: Optional[str] = None,
+    telefone: Optional[str] = None,
+    valor: Optional[float] = None,
+    vencimento: Optional[date] = None,
+    cadastrado: Optional[date] = None
+):
+    query = {}
+    if nome:
+        query["nome"] = nome
+    if cpf:
+        query["cpf"] = cpf
+    if telefone:
+        query["telefone"] = telefone
+    if valor:
+        query["valor"] = valor
+    if vencimento:
+        query["vencimento"] = vencimento
+    if cadastrado:
+        query["cadastrado"] = cadastrado
+
+    cursor = collection.find(query)
+    results = await cursor.to_list(length=100)
+    for result in results:
+        result["_id"] = str(result["_id"])
+    return results
+
+@router.get("/{id}", response_model=ReceberResponse)
+async def get_receber_by_id(id: str):
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid ID")
+    result = await collection.find_one({"_id": ObjectId(id)})
+    if result:
+        result["_id"] = str(result["_id"])
+        return result
+    raise HTTPException(status_code=404, detail="Receber not found")
+
+@router.put("/{id}", response_model=ReceberResponse)
+async def update_receber(id: str, receber: ReceberCreate):
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid ID")
+    update_result = await collection.update_one({"_id": ObjectId(id)}, {"$set": receber.dict()})
+    if update_result.matched_count:
+        updated_receber = await collection.find_one({"_id": ObjectId(id)})
+        updated_receber["_id"] = str(updated_receber["_id"])
+        return updated_receber
+    raise HTTPException(status_code=404, detail="Receber not found")
+
+@router.delete("/{id}", response_model=ReceberResponse)
+async def delete_receber(id: str):
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid ID")
+    delete_result = await collection.delete_one({"_id": ObjectId(id)})
+    if delete_result.deleted_count:
+        return {"message": "Receber deleted successfully"}
+    raise HTTPException(status_code=404, detail="Receber not found")
+
+
+
+
+---------------------------------------
+
+
+# main.py
+
+from fastapi import FastAPI
+from routers import receber
+
+app = FastAPI(
+    title="Elegantia API",
+    description="API para gerenciamento de registros na coleção 'receber' do banco de dados 'elegantiaDB'.",
+    version="1.0.0"
+)
+
+# Incluindo o router para a coleção 'receber'
+app.include_router(receber.router, prefix="/receber", tags=["Receber"])
+
+# Endpoint raiz para verificar se a API está funcionando
+@app.get("/")
+async def root():
+    return {"message": "Bem-vindo à API Elegantia"}
+
+
