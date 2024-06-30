@@ -10,7 +10,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 
 # File Handler
-fh = logging.FileHandler('../log/log.log')
+fh = logging.FileHandler('log/log.log')
 fh.setLevel(logging.INFO)
 
 # Criando Formatter e setando os handlers
