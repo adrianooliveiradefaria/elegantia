@@ -6,7 +6,7 @@ from pydantic import ConfigDict, Field, field_serializer, field_validator
 
 
 class ContaReceberCreateSchema(SCBaseModel):
-    nome: str = Field(..., example='João da Silva')
+    nome: str = Field(..., example='Nome Completo')
     cpf: Optional[str] = Field(..., example='123.456.789-00')
     telefone: str = Field(..., example='(21) 91234-5678')
     valor: float = Field(..., example=1500.75)
@@ -26,11 +26,11 @@ class ContaReceberCreateSchema(SCBaseModel):
 
 class ContaReceberResponseSchema(SCBaseModel):
     id: str
-    nome: str
-    cpf: Optional[str]
-    telefone: str
-    valor: float
-    vencimento: datetime
+    nome: str = Field(..., example='Nome Completo')
+    cpf: Optional[str] = Field(..., example='123.456.789-00')
+    telefone: str = Field(..., example='(21) 91234-5678')
+    valor: float = Field(..., example=1500.75)
+    vencimento: datetime = Field(..., example='31/12/2024')
     cadastro: datetime
 
     @field_validator('vencimento', 'cadastro', mode='before')
@@ -54,7 +54,7 @@ class ContaReceberResponseSchema(SCBaseModel):
 
 class ContaReceberUpdateSchema(SCBaseModel):
     id: str = Field(frozen=True, exclude=True)
-    nome: str = Field(..., example='João da Silva')
+    nome: str = Field(..., example='Nome Completo')
     cpf: Optional[str] = Field(..., example='123.456.789-00')
     telefone: str = Field(..., example='(21) 91234-5678')
     valor: float = Field(..., example=1500.75)
@@ -70,10 +70,6 @@ class ContaReceberUpdateSchema(SCBaseModel):
         if isinstance(v, date) and not isinstance(v, datetime):
             return datetime(v.year, v.month, v.day)
         return v
-
-    @field_serializer('vencimento')
-    def serialize_vencimento(self, v):
-        return v.strftime('%d/%m/%Y')
 
     model_config = ConfigDict(
         from_attributes=True,

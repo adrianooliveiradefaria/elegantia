@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -8,7 +8,7 @@ from core.database import BancoDados
 from core.deps import get_db
 from core.log import logger
 from core.utils import normalizacao
-from models.conta_receber_model import ContaReceberModel, PyObjectId
+from models.conta_receber_model import PyObjectId
 from schemas.conta_receber_schema import (ContaReceberCreateSchema,
                                           ContaReceberResponseSchema,
                                           ContaReceberUpdateSchema)
@@ -50,28 +50,28 @@ async def create_conta_receber(
     '/',
     status_code=status.HTTP_200_OK,
     response_model=List[ContaReceberResponseSchema],
-    description='Lista todas as Contas a Receber',
-    summary='Lista de Contas a Receber',
+    description='Lista ordenada por "nome" em ordem de alfabética',
+    summary='Lista o cadastro de Contas a Receber',
     response_description='Contas a Receber listadas com sucesso!'
 )
 async def read_contas_receber(
     db: BancoDados = Depends(get_db)
 ):
-    list_contas_receber = await db.collection.find().to_list(length=None)
+    lista_contas_receber = await db.collection.find().sort('nome', 1).to_list(length=None)
     # Convertendo ObjectId para string
-    for conta in list_contas_receber:
+    for conta in lista_contas_receber:
         conta['id'] = str(conta['_id'])
         del conta['_id']
 
-    return list_contas_receber
+    return lista_contas_receber
 
 
 @router.get(
     '/{id_conta}',
     status_code=status.HTTP_200_OK,
     response_model=ContaReceberResponseSchema,
-    description='Retorna uma Conta a Receber',
-    summary='Retorna Conta pelo ID',
+    description='Retorna o cadastro de uma Conta a Receber',
+    summary='Busca Conta a Receber',
     response_description='Conta a Receber encontrada.'
 )
 async def read_conta_receber_id(
@@ -99,8 +99,8 @@ async def read_conta_receber_id(
     '/{id_conta}',
     status_code=status.HTTP_202_ACCEPTED,
     response_model=ContaReceberUpdateSchema,
-    description='Atualiza uma Conta a Receber',
-    summary='Parâmetro de atualização ID',
+    description='Atualiza o cadastro de uma Conta a Receber pelo ID',
+    summary='Atualiza Conta a Receber',
     response_description='Conta a Receber atualizada com sucesso!'
 )
 async def update_conta_receber(
@@ -161,8 +161,8 @@ async def update_conta_receber(
 @router.delete(
     '/{id_conta}',
     status_code=status.HTTP_204_NO_CONTENT,
-    description='Deleta uma Conta a Receber',
-    summary='Deleta Conta pelo ID',
+    description='Deleta o cadastro de uma Conta a Receber',
+    summary='Deleta uma Conta a Receber',
     response_description='Conta a Receber deletada com sucesso!'
 )
 async def delete_conta_receber(
@@ -185,16 +185,31 @@ async def delete_conta_receber(
 
     try:
         resultado = await db.collection.delete_one({'_id': ObjectId(id_conta)})
-        if resultado.deleted_count == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Conta a Receber não encontrada!'
-            )
-        logger.info('Conta a Receber deletada com sucesso!')
+        logger.info(f'Conta a Receber ID: {id_conta} deletada com sucesso!')
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail=f'Erro ao deletar conta a receber: {e}'
         )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    '/drop',
+    status_code=status.HTTP_204_NO_CONTENT,
+    description='Deleta todos os documentos da coleção',
+    summary='Deleta todo o cadastro',
+    response_description='Coleção sem Documentos'
+)
+async def delete_all_contas_receber(
+    db: BancoDados = Depends(get_db)
+):
+    try:
+        zera_colecao = await db.collection.delete_many({})
+        logger.info(f'Coleção zerada com sucesso!')
+    except Exception as e:
+        logger.error(f'Erro ao zerar Collection: {e}')
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
