@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from api.v1.api import api_router
 from core.configs import settings
+from midlewares.webhook_midleware import PostWebhookMiddleware
 
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
@@ -14,6 +15,9 @@ app = FastAPI(
     summary='Controle empresarial',
     version='0.1.0'
 )
+
+app.add_middleware(PostWebhookMiddleware)
+
 app.include_router(api_router, prefix=settings.API_V1)
 
 

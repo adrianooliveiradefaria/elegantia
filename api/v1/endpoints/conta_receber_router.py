@@ -28,6 +28,7 @@ async def create_conta_receber(
     conta_receber: ContaReceberCreateSchema,
     db: BancoDados = Depends(get_db)
 ):
+
     conta_receber_dict = conta_receber.model_dump()
 
     try:
