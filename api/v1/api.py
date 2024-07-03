@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 
-# from api.v1.endpoints import conta_receber
 from api.v1.endpoints import conta_receber_router
 
 api_router = APIRouter()

@@ -1,5 +1,3 @@
-from fastapi import Depends, HTTPException, status
-
 from core.database import BancoDados
 
 

@@ -33,7 +33,5 @@ class Nomalizacao:
             del documento['_id']
         return documento
 
-    def automacao(self, documento: Dict):
-        pass
 
 normalizacao = Nomalizacao()

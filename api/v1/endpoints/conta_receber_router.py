@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -16,6 +16,7 @@ from schemas.conta_receber_schema import (ContaReceberCreateSchema,
 router = APIRouter()
 
 
+# Endpoint (URI) para novo cadastro/documento
 @router.post(
     '/',
     status_code=status.HTTP_201_CREATED,
@@ -28,7 +29,6 @@ async def create_conta_receber(
     conta_receber: ContaReceberCreateSchema,
     db: BancoDados = Depends(get_db)
 ):
-
     conta_receber_dict = conta_receber.model_dump()
 
     try:
@@ -47,6 +47,7 @@ async def create_conta_receber(
     return conta_receber_dict
 
 
+# Endpoint (URI) que lista todo o cadastro/documento
 @router.get(
     '/',
     status_code=status.HTTP_200_OK,
@@ -67,6 +68,7 @@ async def read_contas_receber(
     return lista_contas_receber
 
 
+# Endpoint (URI) que lista um cadastro/documento
 @router.get(
     '/{id_conta}',
     status_code=status.HTTP_200_OK,
@@ -96,6 +98,7 @@ async def read_conta_receber_id(
     return normalizacao.id_documento(conta_receber)
 
 
+# Endpoint (URI) que atualiza um cadastro/documento
 @router.put(
     '/{id_conta}',
     status_code=status.HTTP_202_ACCEPTED,
@@ -159,6 +162,7 @@ async def update_conta_receber(
     return conta_receber_dict
 
 
+# Endpoint (URI) que deleta um cadastro/documento
 @router.delete(
     '/{id_conta}',
     status_code=status.HTTP_204_NO_CONTENT,
@@ -196,6 +200,7 @@ async def delete_conta_receber(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+# Endpoint (URI) que deleta todos os cadastros/documentos da coleção
 @router.delete(
     '/drop',
     status_code=status.HTTP_204_NO_CONTENT,
