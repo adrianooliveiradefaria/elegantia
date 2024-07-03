@@ -39,6 +39,6 @@ class ContaReceberModel(BaseModel):
         arbitrary_types_allowed=True,
         json_encoders={
             ObjectId: str,
-            datetime: lambda dt: dt.strftime('%d/%m%Y')
+            datetime: lambda dt: dt.strftime('%d/%m/%Y')
         }
     )
